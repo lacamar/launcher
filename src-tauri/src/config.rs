@@ -597,6 +597,35 @@ impl LauncherConfig {
       .is_some_and(|config| config.has_installed_mod(source, mod_name))
   }
 
+  #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
+  pub fn sync_system_tooling(&mut self) -> Result<()> {
+    const SYSTEM_DIR: &str = "/usr/lib64/opengoal";
+    let Ok(version) = fs::read_to_string(Path::new(SYSTEM_DIR).join("VERSION")) else {
+      return Ok(());
+    };
+    let Ok(install_dir) = self.install_dir() else {
+      return Ok(());
+    };
+    let version = version.trim().to_owned();
+    let official_dir = install_dir.join("versions").join("official");
+    create_dir(&official_dir)?;
+    for entry in fs::read_dir(&official_dir)?.flatten() {
+      if fs::read_link(entry.path()).is_ok_and(|t| t == Path::new(SYSTEM_DIR)) {
+        fs::remove_file(entry.path())?;
+      }
+    }
+    std::os::unix::fs::symlink(SYSTEM_DIR, official_dir.join(&version))?;
+    if self.active_version.as_ref() != Some(&version) {
+      self.set_active_version(Some(version))?;
+    }
+    self.copy_active_binaries()
+  }
+
+  #[cfg(not(all(target_os = "linux", target_arch = "aarch64")))]
+  pub fn sync_system_tooling(&mut self) -> Result<()> {
+    Ok(())
+  }
+
   pub fn copy_active_binaries(&self) -> anyhow::Result<()> {
     let install_dir = self.install_dir()?;
     let version = self.active_version()?;

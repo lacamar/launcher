@@ -31,6 +31,8 @@ function getDownloadLinkForCurrentPlatform(githubRelease: GitHubRelease) {
         !asset.name.toLowerCase().includes("lsp") &&
         asset.name.toLowerCase().includes(userArch),
     );
+  } else if (plat == "linux" && arch() !== "x86_64") {
+    return undefined;
   } else {
     matchingAsset = githubRelease.assets.find(
       (asset) =>

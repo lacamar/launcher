@@ -30,9 +30,9 @@ async function evaluateRequirements(
   const architecture = arch();
   const osType = type();
 
-  const isAVXRelevant = osType !== "macos";
+  const isAVXRelevant = osType !== "macos" && architecture !== "aarch64";
   const isTryingToUseARMOutsideOfMacOS =
-    architecture === "aarch64" && osType !== "macos";
+    architecture === "aarch64" && osType === "windows";
   const isVCCRelevant = osType === "windows";
 
   const isOpenGLMet = await isOpenGLRequirementMet(forceOpenGL);
@@ -45,9 +45,9 @@ async function evaluateRequirements(
 
   let requirementsMet: boolean;
 
-  if (architecture === "aarch64" && osType !== "macos") {
+  if (isTryingToUseARMOutsideOfMacOS) {
     requirementsMet = false;
-  } else if (osType === "macos") {
+  } else if (osType === "macos" || architecture === "aarch64") {
     requirementsMet = Boolean(isOpenGLMet && isDiskSpaceMet);
   } else if (osType === "windows") {
     requirementsMet = Boolean(

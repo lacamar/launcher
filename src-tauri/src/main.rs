@@ -73,8 +73,18 @@ static TAURI_APP: OnceCell<tauri::AppHandle> = OnceCell::const_new();
 fn main() {
   #[cfg(target_os = "linux")]
   unsafe {
+    let wayland = std::env::var_os("WAYLAND_DISPLAY").is_some();
     // temporary fix for: https://github.com/tauri-apps/tauri/issues/5143
-    std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    if !wayland && std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none() {
+      std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+    }
+    // SDL only picks wayland on compositors with fifo-v1
+    if wayland
+      && std::env::var_os("SDL_VIDEO_DRIVER").is_none()
+      && std::env::var_os("SDL_VIDEODRIVER").is_none()
+    {
+      std::env::set_var("SDL_VIDEO_DRIVER", "wayland");
+    }
   }
   // In the event that some catastrophic happens, atleast log it out
   // the panic_hook will log to a file on the desktop
@@ -132,12 +142,16 @@ fn main() {
       //
       // This allows us to avoid hacky globals, and pass around information (in this case, the config)
       // to the relevant places
-      let config = config::LauncherConfig::load_config(
+      let mut config = config::LauncherConfig::load_config(
         app
           .path()
           .app_config_dir()
           .expect("Failed to resolve app config directory"),
       );
+
+      if let Err(err) = config.sync_system_tooling() {
+        warn!("Failed to sync system tooling: {err}");
+      }
 
       if config.active_version.is_some() {
         if let Err(err) = config.ensure_active_binaries_exist() {

@@ -75,6 +75,9 @@ pub async fn set_install_directory(
     tracing::error!("Unable to persist installation directory: {:?}", err);
     CommandError::Configuration("Unable to persist installation directory".to_owned())
   })?;
+  if let Err(err) = config_lock.sync_system_tooling() {
+    tracing::warn!("Failed to sync system tooling: {err}");
+  }
   Ok(())
 }
 

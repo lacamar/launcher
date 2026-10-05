@@ -558,6 +558,8 @@ pub async fn launch_game(
     .stderr(log_file_err)
     .current_dir(exec_info.executable_dir);
 
+  #[cfg(target_os = "linux")]
+  command.env("SDL_APP_ID", format!("opengoal-{game_name}"));
   #[cfg(windows)]
   {
     const CREATE_NO_WINDOW: u32 = 0x08000000;

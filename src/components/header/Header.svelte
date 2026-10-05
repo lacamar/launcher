@@ -69,6 +69,7 @@
     const latestVersion = latestToolingVersion?.version;
 
     if (!latestVersion) return;
+    if (!latestToolingVersion?.downloadUrl) return;
     if (versionState.activeToolingVersion === latestVersion) return;
 
     // Check that we havn't already downloaded it
